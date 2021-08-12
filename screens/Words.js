@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import Words from './screens/Words.js';
+import { StyleSheet, Text, View } from 'react-native';
 
-export default function App() {
+export default function Words() {
     return (
-        <Words />
+        <View style={styles.container}>
+            <Text>Words</Text>
+        </View>
     );
 }
 
