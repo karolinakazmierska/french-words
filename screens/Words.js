@@ -14,12 +14,11 @@ export default function Words() {
         // If yes, get them from storage
         let words = ['hello', 'world', 'bye'];
         setCurrentWords(words);
-        console.log(words)
     }, []);
 
     return (
         <View style={styles.container}>
-            <Text>Word(s) of the day: {currentWords}</Text>
+            <Text style={styles.title}>Word{currentWords.length > 1 ? 's' : ''} of the day:</Text>
 
             <SwiperFlatList
                 index={0}
@@ -39,10 +38,18 @@ export default function Words() {
     );
 }
 
+
+import colors from './../utils/colors.js';
 const styles = StyleSheet.create({
     container: {
         paddingVertical: 80,
         paddingHorizontal: 20,
+    },
+    title: {
+        fontSize: 16,
+        marginBottom: 24,
+        color: colors.dark,
+        fontWeight: 'bold'
     },
     slider: {
         flexDirection: 'row'
@@ -52,9 +59,9 @@ const styles = StyleSheet.create({
         width: width - 40
     },
     active: {
-        backgroundColor: 'red'
+        backgroundColor: colors.primary
     },
     inactive: {
-        backgroundColor: 'blue'
+        backgroundColor: colors.light
     }
 });
