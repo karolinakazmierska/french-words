@@ -9,17 +9,17 @@ export default function Words({ word }) {
     );
 }
 
-import colors from './../utils/colors.js';
+import s from './../utils/styles.js';
 const styles = StyleSheet.create({
     word: {
         flexDirection: 'column',
         justifyContent: 'center',
-        backgroundColor: colors.primary,
+        backgroundColor: s.primary,
         padding: 20,
-        borderRadius: 10,
+        borderRadius: s.radius,
         marginRight: 10
     },
     text: {
-        color: colors.light
+        color: s.light
     }
 });
