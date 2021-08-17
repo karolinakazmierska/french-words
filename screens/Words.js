@@ -4,6 +4,7 @@ import { SwiperFlatList } from 'react-native-swiper-flatlist';
 import Word from './../components/Word.js';
 import PreviousWord from './../components/PreviousWord.js';
 import { data } from './../utils/data.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // @TODO: move utils/data.js into remote storage (Firebase?)
 
@@ -11,28 +12,83 @@ const { width, height } = Dimensions.get('window');
 
 export default function Words() {
 
+    /*** Number of words per day to display */
+    const [wordsNumber, setWordsNumber] = useState('');
+    useEffect(() => {
+        const getWordsNumber = async () => {
+            try {
+                const value = await AsyncStorage.getItem('words_number');
+                if (value !== null) {
+                    setWordsNumber(value);
+                }
+                // @TODO: temp. solution - if value is null, take user to settings screen
+                else {
+                    setWordsNumber(2);
+                }
+            } catch(e) {
+                console.log(e)
+            }
+        }
+        getWordsNumber()
+    }, [])
+
+    /*** Today's words to display */
     const [currentWords, setCurrentWords] = useState([]);
     useEffect(() => {
-        // @TODO: Get user's number of words from storage (hardcoded for now)
-        let num = 2;
-
+        let currentTime = new Date();
+        let date = currentTime.toDateString();
         let words = [];
-        for (let i = 0; i < num; i++) {
-            let w = data[Math.floor(Math.random() * data.length)];
-            words.push(w);
+
+        const getCurrentWords = async () => {
+            try {
+                const jsonValue = await AsyncStorage.getItem('current_words');
+                const value = (jsonValue != null ? JSON.parse(jsonValue) : null);
+                console.log(value)
+                if (value && value.date == date) { // Words from today already saved
+                    words = value.words;
+                } else if (value && value.date != date) { // Words from previous day present
+                    setPreviousWords(...previousWords, value) // @TODO: test!
+                    words = getRandomWords();
+                    saveTodaysWords(words);
+                } else {
+                    words = getRandomWords();
+                    saveTodaysWords(words);
+                }
+                setCurrentWords(words);
+            } catch(e) {
+                console.log(e)
+            }
         }
-        // @TODO: also check if there are words from today in storage
-        // @TODO: make sure words don't repeat themselves*
-        // @TODO: save fetched words to storage
+        getCurrentWords();
 
-        console.log(words);
-        setCurrentWords(words);
+        const getRandomWords = () => {
+            // @TODO: make sure words don't repeat themselves*
+            let arr = [];
+            for (let i = 0; i < wordsNumber; i++) {
+                let w = data[Math.floor(Math.random() * data.length)];
+                arr.push(w);
+            }
+            return arr;
+        }
 
+        const saveTodaysWords = async (value) => {
+            let obj = {
+                date: date,
+                words: value
+            }
+            try {
+                const jsonValue = JSON.stringify(obj)
+                await AsyncStorage.setItem('current_words', jsonValue)
+            } catch (e) {
+                // saving error
+            }
+        }
     }, []);
 
+    /*** Words displayed in previous days */
     const [previousWords, setPreviousWords] = useState([]);
     useEffect(() => {
-        // @TODO: check if there are previous words in storage
+        // @TODO: get previous words from AsyncStorage
         let words = ['prevWord', 'anotherOne', 'lastOne', 'hello', 'good morning', 'bonjour', 'merci', 'voila', 'scroll'];
         setPreviousWords(words);
     }, [])
