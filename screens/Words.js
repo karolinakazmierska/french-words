@@ -3,6 +3,9 @@ import { StyleSheet, Text, View, SafeAreaView, ScrollView, FlatList, Dimensions 
 import { SwiperFlatList } from 'react-native-swiper-flatlist';
 import Word from './../components/Word.js';
 import PreviousWord from './../components/PreviousWord.js';
+import { data } from './../utils/data.js';
+
+// @TODO: move utils/data.js into remote storage (Firebase?)
 
 const { width, height } = Dimensions.get('window');
 
@@ -10,18 +13,27 @@ export default function Words() {
 
     const [currentWords, setCurrentWords] = useState([]);
     useEffect(() => {
-        // @TODO: check if there are words from today in storage
-        // If not, get them from API and save them to storage
-        // If yes, get them from storage
-        let words = ['hello', 'world', 'bye'];
+        // @TODO: Get user's number of words from storage (hardcoded for now)
+        let num = 2;
+
+        let words = [];
+        for (let i = 0; i < num; i++) {
+            let w = data[Math.floor(Math.random() * data.length)];
+            words.push(w);
+        }
+        // @TODO: also check if there are words from today in storage
+        // @TODO: make sure words don't repeat themselves*
+        // @TODO: save fetched words to storage
+
+        console.log(words);
         setCurrentWords(words);
+
     }, []);
 
     const [previousWords, setPreviousWords] = useState([]);
     useEffect(() => {
         // @TODO: check if there are previous words in storage
         let words = ['prevWord', 'anotherOne', 'lastOne', 'hello', 'good morning', 'bonjour', 'merci', 'voila', 'scroll'];
-        console.log(words);
         setPreviousWords(words);
     }, [])
 
@@ -73,7 +85,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20
     },
     section: {
-        
+
     },
     previous: {
         flex: 1
