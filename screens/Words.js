@@ -9,6 +9,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // @TODO: move utils/data.js into remote storage (Firebase?)
 
 const { width, height } = Dimensions.get('window');
+const NUM = 'words_number';
+const CURRENT = 'current_words';
+const PREVIOUS = 'previous_words';
 
 export default function Words() {
 
@@ -17,7 +20,7 @@ export default function Words() {
     useEffect(() => {
         const getWordsNumber = async () => {
             try {
-                const value = await AsyncStorage.getItem('words_number');
+                const value = await AsyncStorage.getItem(NUM);
                 if (value !== null) {
                     setWordsNumber(value);
                 }
@@ -32,27 +35,37 @@ export default function Words() {
         getWordsNumber()
     }, [])
 
-    /*** Today's words to display */
     const [currentWords, setCurrentWords] = useState([]);
-    useEffect(() => {
-        let currentTime = new Date();
-        let date = currentTime.toDateString();
-        let words = [];
+    const [previousWords, setPreviousWords] = useState([]);
 
+    useEffect(() => {
+
+        /** Getting words listed as current in AsyncStorage */
         const getCurrentWords = async () => {
+            let currentTime = new Date();
+            let date = currentTime.toDateString();
+            let words = [];
+
             try {
-                const jsonValue = await AsyncStorage.getItem('current_words');
+                const jsonValue = await AsyncStorage.getItem(CURRENT);
                 const value = (jsonValue != null ? JSON.parse(jsonValue) : null);
-                console.log(value)
-                if (value && value.date == date) { // Words from today already saved
+
+                // Words from today already saved under 'current_words'
+                if (value && value.date == date && value.words.length > 0) {
                     words = value.words;
-                } else if (value && value.date != date) { // Words from previous day present
-                    setPreviousWords(...previousWords, value) // @TODO: test!
+                    getPreviousWords();
+
+                // Words from previous days are under 'current_words'
+                } else if (value && value.date != date) {
+                    setPreviousWords([...previousWords, ...value.words]);
+                    savePreviousWords([...previousWords, ...value.words]);
                     words = getRandomWords();
-                    saveTodaysWords(words);
+                    saveCurrentWords(date, words);
+
+                // Other - e.g. first time in the app
                 } else {
                     words = getRandomWords();
-                    saveTodaysWords(words);
+                    saveCurrentWords(words);
                 }
                 setCurrentWords(words);
             } catch(e) {
@@ -71,27 +84,44 @@ export default function Words() {
             return arr;
         }
 
-        const saveTodaysWords = async (value) => {
+        /** Saving today's words as current to AsyncStorage */
+        const saveCurrentWords = async (date, words) => {
             let obj = {
                 date: date,
-                words: value
+                words: words
             }
             try {
                 const jsonValue = JSON.stringify(obj)
-                await AsyncStorage.setItem('current_words', jsonValue)
+                await AsyncStorage.setItem(CURRENT, jsonValue)
+            } catch (e) {
+                // saving error
+            }
+        }
+
+        /** Getting words generated in previous days */
+        const getPreviousWords = async () => {
+            try {
+                const jsonValue = await AsyncStorage.getItem(PREVIOUS);
+                const value = (jsonValue != null ? JSON.parse(jsonValue) : null);
+                setPreviousWords(value);
+            } catch(e) {
+                console.log(e)
+            }
+        }
+
+        /** Saving words generated in previous days to AsyncStorage */
+        const savePreviousWords = async (words) => {
+            try {
+                const jsonValue = JSON.stringify(words)
+                await AsyncStorage.setItem(PREVIOUS, jsonValue)
             } catch (e) {
                 // saving error
             }
         }
     }, []);
 
-    /*** Words displayed in previous days */
-    const [previousWords, setPreviousWords] = useState([]);
-    useEffect(() => {
-        // @TODO: get previous words from AsyncStorage
-        let words = ['prevWord', 'anotherOne', 'lastOne', 'hello', 'good morning', 'bonjour', 'merci', 'voila', 'scroll'];
-        setPreviousWords(words);
-    }, [])
+
+
 
     return (
         <SafeAreaView styles={styles.mainView}>
