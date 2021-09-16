@@ -5,6 +5,7 @@ import Word from './../components/Word.js';
 import PreviousWord from './../components/PreviousWord.js';
 import { data } from './../utils/data.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Settings from './Settings.js';
 
 // @TODO: move utils/data.js into remote storage (Firebase?)
 
@@ -15,18 +16,37 @@ const PREVIOUS = 'previous_words';
 
 export default function Words() {
 
+    // Temp. method for testing
+    const removeItemValue = async (key) => {
+        try {
+            await AsyncStorage.removeItem(key);
+            return true;
+        }
+        catch(exception) {
+            return false;
+        }
+    }
+
+    // Temp. - removing words number to have modal open
+    removeItemValue(CURRENT);
+    removeItemValue(PREVIOUS);
+    removeItemValue(NUM);
+
+
+
     /*** Number of words per day to display */
     const [wordsNumber, setWordsNumber] = useState('');
+    const [modalVisible, setModalVisible] = useState(false);
+
     useEffect(() => {
         const getWordsNumber = async () => {
             try {
                 const value = await AsyncStorage.getItem(NUM);
                 if (value !== null) {
                     setWordsNumber(value);
-                }
-                // @TODO: temp. solution - if value is null, take user to settings screen
-                else {
-                    setWordsNumber(2);
+                } else {
+                    // setWordsNumber(2);
+                    setModalVisible(true);
                 }
             } catch(e) {
                 console.log(e)
@@ -39,24 +59,31 @@ export default function Words() {
     const [previousWords, setPreviousWords] = useState([]);
 
     useEffect(() => {
+        console.log('USE EFFECT')
 
         /** Getting words listed as current in AsyncStorage */
         const getCurrentWords = async () => {
             let currentTime = new Date();
+            // currentTime.setDate(currentTime.getDate() + 2); // mock to increment date by one
             let date = currentTime.toDateString();
+            console.log(date)
             let words = [];
 
             try {
                 const jsonValue = await AsyncStorage.getItem(CURRENT);
                 const value = (jsonValue != null ? JSON.parse(jsonValue) : null);
+                console.log('Storage CURRENT:', value)
 
                 // Words from today already saved under 'current_words'
                 if (value && value.date == date && value.words.length > 0) {
+                    console.log('1')
                     words = value.words;
                     getPreviousWords();
 
                 // Words from previous days are under 'current_words'
                 } else if (value && value.date != date) {
+                    console.log('2')
+                    console.log(previousWords, value.words)
                     setPreviousWords([...previousWords, ...value.words]);
                     savePreviousWords([...previousWords, ...value.words]);
                     words = getRandomWords();
@@ -64,9 +91,12 @@ export default function Words() {
 
                 // Other - e.g. first time in the app
                 } else {
+                    console.log('3')
                     words = getRandomWords();
-                    saveCurrentWords(words);
+                    saveCurrentWords(date, words);
+                    setPreviousWords([]); // ?
                 }
+                console.log('Setting current words', words)
                 setCurrentWords(words);
             } catch(e) {
                 console.log(e)
@@ -86,6 +116,7 @@ export default function Words() {
 
         /** Saving today's words as current to AsyncStorage */
         const saveCurrentWords = async (date, words) => {
+            console.log('Save current words')
             let obj = {
                 date: date,
                 words: words
@@ -100,9 +131,11 @@ export default function Words() {
 
         /** Getting words generated in previous days */
         const getPreviousWords = async () => {
+            console.log('Get previous words')
             try {
                 const jsonValue = await AsyncStorage.getItem(PREVIOUS);
-                const value = (jsonValue != null ? JSON.parse(jsonValue) : null);
+                const value = (jsonValue != null ? JSON.parse(jsonValue) : []);
+                console.log('Prev:', value);
                 setPreviousWords(value);
             } catch(e) {
                 console.log(e)
@@ -125,6 +158,7 @@ export default function Words() {
 
     return (
         <SafeAreaView styles={styles.mainView}>
+            <Settings visible={modalVisible} />
             <ScrollView style={styles.container}>
                 <View style={styles.section}>
                     <Text style={styles.title}>Word{currentWords.length > 1 ? 's' : ''} of the day:</Text>
@@ -146,13 +180,20 @@ export default function Words() {
 
                 <View style={[styles.section, styles.previous]}>
                     <Text style={styles.title}>Previous words:</Text>
-                    <FlatList
-                        data={previousWords}
-                        keyExtractor={item => item}
-                        renderItem={({ item }) => (
-                            <PreviousWord word={item} />
-                        )}
-                    />
+                    {
+                        previousWords && previousWords.length > 0 ? (
+                            <FlatList
+                                data={previousWords}
+                                keyExtractor={item => item}
+                                renderItem={({ item }) => (
+                                    <PreviousWord word={item} />
+                                )}
+                            />
+                        ) : (
+                            <Text>No previous words to show</Text>
+                        )
+                    }
+
                 </View>
             </ScrollView>
         </SafeAreaView>
