@@ -22,29 +22,23 @@ export default function Words() {
             await AsyncStorage.removeItem(key);
             return true;
         }
-        catch(exception) {
+        catch(e) {
             return false;
         }
     }
-    removeItemValue(CURRENT);
-    removeItemValue(PREVIOUS);
-    removeItemValue(NUM);
-
-
+    // removeItemValue(CURRENT);
+    // removeItemValue(PREVIOUS);
+    // removeItemValue(NUM);
 
     /*** Number of words per day to display */
-    const [wordsNumber, setWordsNumber] = useState('');
+    const [wordsNumber, setWordsNumber] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
 
     useEffect(() => {
         const getWordsNumber = async () => {
             try {
                 const value = await AsyncStorage.getItem(NUM);
-                if (value !== null) {
-                    setWordsNumber(value);
-                } else {
-                    setModalVisible(true);
-                }
+                value !== null ? setWordsNumber(value) : setModalVisible(true);
             } catch(e) {
                 console.log(e)
             }
@@ -60,48 +54,54 @@ export default function Words() {
         }
     }
 
+    /* Today's words and words from previous days */
     const [currentWords, setCurrentWords] = useState([]);
     const [previousWords, setPreviousWords] = useState([]);
 
     useEffect(() => {
-        console.log('USE EFFECT')
 
         /** Getting words listed as current in AsyncStorage */
         const getCurrentWords = async () => {
             let currentTime = new Date();
-            currentTime.setDate(currentTime.getDate() + 3); // mock to increment date by one
+            currentTime.setDate(currentTime.getDate() + 8); // @TEMPORARY: mock to increment date by one
             let date = currentTime.toDateString();
-            console.log(date)
             let words = [];
 
             try {
                 const jsonValue = await AsyncStorage.getItem(CURRENT);
                 const value = (jsonValue != null ? JSON.parse(jsonValue) : null);
-                console.log('Storage CURRENT:', value)
 
                 // Words from today already saved under 'current_words'
                 if (value && value.date == date && value.words.length > 0) {
-                    console.log('1')
-                    words = value.words;
+                    console.log('Check: there are ' + value.words.length + ' words, but NUM is ' + wordsNumber);
+
+                    /* If the words have been loaded but the user has changed daily words number */
+                    if (value.words.length == wordsNumber) {
+                        words = value.words
+                    } else if (value.words.length > wordsNumber) {
+                        words = value.words.slice(0,wordsNumber);
+                        saveCurrentWords(date, words);
+                    } else if (value.words.length < wordsNumber) {
+                        let additionalWords = getRandomWords(wordsNumber - value.words.length);
+                        words = [...value.words, ...additionalWords];
+                        saveCurrentWords(date, words);
+                    }
+
                     getPreviousWords();
 
                 // Words from previous days are under 'current_words'
                 } else if (value && value.date != date) {
-                    console.log('2')
-                    console.log(previousWords, value.words)
                     setPreviousWords([...previousWords, ...value.words]);
                     savePreviousWords([...previousWords, ...value.words]);
-                    words = getRandomWords();
+                    words = getRandomWords(wordsNumber);
                     saveCurrentWords(date, words);
 
                 // Other - e.g. first time in the app
                 } else {
-                    console.log('3')
-                    words = getRandomWords();
+                    words = getRandomWords(wordsNumber);
                     saveCurrentWords(date, words);
                     setPreviousWords([]); // ?
                 }
-                console.log('Setting current words', words)
                 setCurrentWords(words);
             } catch(e) {
                 console.log(e)
@@ -109,10 +109,10 @@ export default function Words() {
         }
         getCurrentWords();
 
-        const getRandomWords = () => {
+        const getRandomWords = (n) => {
             // @TODO: make sure words don't repeat themselves*
             let arr = [];
-            for (let i = 0; i < wordsNumber; i++) {
+            for (let i = 0; i < parseInt(n); i++) {
                 let w = data[Math.floor(Math.random() * data.length)];
                 arr.push(w);
             }
@@ -121,7 +121,6 @@ export default function Words() {
 
         /** Saving today's words as current to AsyncStorage */
         const saveCurrentWords = async (date, words) => {
-            console.log('Save current words')
             let obj = {
                 date: date,
                 words: words
@@ -136,11 +135,9 @@ export default function Words() {
 
         /** Getting words generated in previous days */
         const getPreviousWords = async () => {
-            console.log('Get previous words')
             try {
                 const jsonValue = await AsyncStorage.getItem(PREVIOUS);
                 const value = (jsonValue != null ? JSON.parse(jsonValue) : []);
-                console.log('Prev:', value);
                 setPreviousWords(value);
             } catch(e) {
                 console.log(e)
@@ -156,12 +153,17 @@ export default function Words() {
                 console.log(e)
             }
         }
-    }, []);
+    }, [wordsNumber]);
 
     const saveNumber = (n) => {
-        setWordsNumber(n);
-        saveWordsNumber(n);
-        setModalVisible(false);
+        console.log('saveNumber', n)
+        if (n) {
+            n = (typeof n == "number" ? n : parseInt(n))
+            console.log('Saving words number ', n)
+            setWordsNumber(n);
+            saveWordsNumber(n);
+            setModalVisible(false);
+        }
     }
 
     return (

@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, Modal, FlatList, TouchableOpacity, Dimensions }
 
 const { width, height } = Dimensions.get('window');
 const padding = 20;
-const options = [1,2,3,4];
+const options = ['1','2','3','4'];
 const buttonMarginRight = 20;
 const buttonWidth = (width - 2 * padding) / 4 - buttonMarginRight * (options.length - 1) / options.length;
 
@@ -26,7 +26,7 @@ export default function Settings({ visible, saveNumber }) {
                     renderItem={({item}) => {
                         return (
                             <TouchableOpacity style={[styles.button, (selected === item ? styles.selectedButton : '')]} onPress={() => setSelected(item)}>
-                                <Text style={[styles.text, (selected === item ? styles.selectedText : '')]}>{item.toString()}</Text>
+                                <Text style={[styles.text, (selected === item ? styles.selectedText : '')]}>{item}</Text>
                             </TouchableOpacity>
                         )
                     }}
