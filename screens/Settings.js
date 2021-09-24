@@ -1,10 +1,19 @@
 import React, { useState, useEffect }  from 'react';
-import { StyleSheet, Text, View, Modal, FlatList, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, Modal, FlatList, TouchableOpacity, Dimensions } from 'react-native';
 
-export default function Settings({ visible }) {
+const { width, height } = Dimensions.get('window');
+const padding = 20;
+const options = [1,2,3,4];
+const buttonMarginRight = 20;
+const buttonWidth = (width - 2 * padding) / 4 - buttonMarginRight * (options.length - 1) / options.length;
 
-    let options = ['1','2','3','4'];
-    const [selected, setSelected] = useState('1');
+export default function Settings({ visible, saveNumber }) {
+
+    const [selected, setSelected] = useState(1);
+
+    // const update = () => {
+    //     console.log('saving', selected)
+    // }
 
     return (
         <Modal visible={visible}>
@@ -12,17 +21,19 @@ export default function Settings({ visible }) {
                 <Text style={styles.title}>How many words per day would you like to learn?</Text>
                 <FlatList
                     data={options}
+                    horizontal={true}
                     keyExtractor={item => item}
                     renderItem={({item}) => {
                         return (
-                            <TouchableOpacity onPress={() => setSelected(item)}>
-                                <Text
-                                    style={[styles.button, (selected === item ? styles.selected : styles.notSelected)]}
-                                >{item}</Text>
+                            <TouchableOpacity style={[styles.button, (selected === item ? styles.selectedButton : '')]} onPress={() => setSelected(item)}>
+                                <Text style={[styles.text, (selected === item ? styles.selectedText : '')]}>{item.toString()}</Text>
                             </TouchableOpacity>
                         )
                     }}
                 />
+                <TouchableOpacity style={styles.save} onPress={() => saveNumber(selected)}>
+                    <Text style={styles.saveText}>Save</Text>
+                </TouchableOpacity>
             </View>
         </Modal>
     )
@@ -31,9 +42,8 @@ export default function Settings({ visible }) {
 import s from './../utils/styles.js';
 const styles = StyleSheet.create({
     modalView: {
-        flex: 1,
         paddingTop: 100,
-        paddingHorizontal: 20,
+        paddingHorizontal: padding,
         marginTop: 22
     },
     title: {
@@ -43,9 +53,36 @@ const styles = StyleSheet.create({
         fontWeight: 'bold'
     },
     button: {
-        fontSize: 28
+        display: 'flex',
+        backgroundColor: s.light,
+        width: buttonWidth,
+        height: buttonWidth,
+        marginRight: buttonMarginRight,
+        borderRadius: s.radius,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
     },
-    selected: {
-        color: s.dark
+    selectedButton: {
+        backgroundColor: s.primary,
+    },
+    text: {
+        fontSize: 20,
+        color: s.primary
+    },
+    selectedText: {
+        color: s.light
+    },
+    save: {
+        backgroundColor: s.primary,
+        marginTop: 24,
+        padding: 10,
+        borderRadius: s.radius,
+        margin: 60
+    },
+    saveText: {
+        fontSize: 24,
+        color: s.light,
+        textAlign: 'center'
     }
 });

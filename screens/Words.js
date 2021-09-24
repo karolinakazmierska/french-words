@@ -16,7 +16,7 @@ const PREVIOUS = 'previous_words';
 
 export default function Words() {
 
-    // Temp. method for testing
+    /* @TEMPORARY: cleans AsyncStorage */
     const removeItemValue = async (key) => {
         try {
             await AsyncStorage.removeItem(key);
@@ -26,8 +26,6 @@ export default function Words() {
             return false;
         }
     }
-
-    // Temp. - removing words number to have modal open
     removeItemValue(CURRENT);
     removeItemValue(PREVIOUS);
     removeItemValue(NUM);
@@ -45,7 +43,6 @@ export default function Words() {
                 if (value !== null) {
                     setWordsNumber(value);
                 } else {
-                    // setWordsNumber(2);
                     setModalVisible(true);
                 }
             } catch(e) {
@@ -54,6 +51,14 @@ export default function Words() {
         }
         getWordsNumber()
     }, [])
+
+    const saveWordsNumber = async (n) => {
+        try {
+            await AsyncStorage.setItem(NUM, JSON.stringify(n))
+        } catch (e) {
+            console.log(e)
+        }
+    }
 
     const [currentWords, setCurrentWords] = useState([]);
     const [previousWords, setPreviousWords] = useState([]);
@@ -64,7 +69,7 @@ export default function Words() {
         /** Getting words listed as current in AsyncStorage */
         const getCurrentWords = async () => {
             let currentTime = new Date();
-            // currentTime.setDate(currentTime.getDate() + 2); // mock to increment date by one
+            currentTime.setDate(currentTime.getDate() + 3); // mock to increment date by one
             let date = currentTime.toDateString();
             console.log(date)
             let words = [];
@@ -125,7 +130,7 @@ export default function Words() {
                 const jsonValue = JSON.stringify(obj)
                 await AsyncStorage.setItem(CURRENT, jsonValue)
             } catch (e) {
-                // saving error
+                console.log(e)
             }
         }
 
@@ -148,17 +153,20 @@ export default function Words() {
                 const jsonValue = JSON.stringify(words)
                 await AsyncStorage.setItem(PREVIOUS, jsonValue)
             } catch (e) {
-                // saving error
+                console.log(e)
             }
         }
     }, []);
 
-
-
+    const saveNumber = (n) => {
+        setWordsNumber(n);
+        saveWordsNumber(n);
+        setModalVisible(false);
+    }
 
     return (
         <SafeAreaView styles={styles.mainView}>
-            <Settings visible={modalVisible} />
+            <Settings visible={modalVisible} saveNumber={saveNumber} />
             <ScrollView style={styles.container}>
                 <View style={styles.section}>
                     <Text style={styles.title}>Word{currentWords.length > 1 ? 's' : ''} of the day:</Text>
@@ -183,7 +191,7 @@ export default function Words() {
                     {
                         previousWords && previousWords.length > 0 ? (
                             <FlatList
-                                data={previousWords}
+                                data={[...previousWords].reverse()}
                                 keyExtractor={item => item}
                                 renderItem={({ item }) => (
                                     <PreviousWord word={item} />
