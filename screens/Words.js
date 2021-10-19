@@ -34,137 +34,161 @@ export default function Words() {
     const [wordsNumber, setWordsNumber] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
 
-    useEffect(() => {
-        const getWordsNumber = async () => {
-            try {
-                const value = await AsyncStorage.getItem(NUM);
-                value !== null ? setWordsNumber(value) : setModalVisible(true);
-            } catch(e) {
-                console.log(e)
-            }
-        }
-        getWordsNumber()
-    }, [])
-
-    const saveWordsNumber = async (n) => {
-        try {
-            await AsyncStorage.setItem(NUM, JSON.stringify(n))
-        } catch (e) {
-            console.log(e)
-        }
-    }
-
     /* Today's words and words from previous days */
     const [currentWords, setCurrentWords] = useState([]);
     const [previousWords, setPreviousWords] = useState([]);
 
     useEffect(() => {
+        console.log('USE EFFECT 1')
+        getWordsNumber();
+    }, [])
 
-        /** Getting words listed as current in AsyncStorage */
-        const getCurrentWords = async () => {
-            let currentTime = new Date();
-            currentTime.setDate(currentTime.getDate() + 8); // @TEMPORARY: mock to increment date by one
-            let date = currentTime.toDateString();
-            let words = [];
+    useEffect(() => {
+        if (wordsNumber) {
+            console.log('USE EFFECT 2 -- words number changed and is now', wordsNumber)
 
-            try {
-                const jsonValue = await AsyncStorage.getItem(CURRENT);
-                const value = (jsonValue != null ? JSON.parse(jsonValue) : null);
-
-                // Words from today already saved under 'current_words'
-                if (value && value.date == date && value.words.length > 0) {
-                    console.log('Check: there are ' + value.words.length + ' words, but NUM is ' + wordsNumber);
-
-                    /* If the words have been loaded but the user has changed daily words number */
-                    if (value.words.length == wordsNumber) {
-                        words = value.words
-                    } else if (value.words.length > wordsNumber) {
-                        words = value.words.slice(0,wordsNumber);
-                        saveCurrentWords(date, words);
-                    } else if (value.words.length < wordsNumber) {
-                        let additionalWords = getRandomWords(wordsNumber - value.words.length);
-                        words = [...value.words, ...additionalWords];
-                        saveCurrentWords(date, words);
-                    }
-
-                    getPreviousWords();
-
-                // Words from previous days are under 'current_words'
-                } else if (value && value.date != date) {
-                    setPreviousWords([...previousWords, ...value.words]);
-                    savePreviousWords([...previousWords, ...value.words]);
-                    words = getRandomWords(wordsNumber);
-                    saveCurrentWords(date, words);
-
-                // Other - e.g. first time in the app
-                } else {
-                    words = getRandomWords(wordsNumber);
-                    saveCurrentWords(date, words);
-                    setPreviousWords([]); // ?
-                }
-                setCurrentWords(words);
-            } catch(e) {
-                console.log(e)
-            }
-        }
-        getCurrentWords();
-
-        const getRandomWords = (n) => {
-            // @TODO: make sure words don't repeat themselves*
-            let arr = [];
-            for (let i = 0; i < parseInt(n); i++) {
-                let w = data[Math.floor(Math.random() * data.length)];
-                arr.push(w);
-            }
-            return arr;
-        }
-
-        /** Saving today's words as current to AsyncStorage */
-        const saveCurrentWords = async (date, words) => {
-            let obj = {
-                date: date,
-                words: words
-            }
-            try {
-                const jsonValue = JSON.stringify(obj)
-                await AsyncStorage.setItem(CURRENT, jsonValue)
-            } catch (e) {
-                console.log(e)
-            }
-        }
-
-        /** Getting words generated in previous days */
-        const getPreviousWords = async () => {
-            try {
-                const jsonValue = await AsyncStorage.getItem(PREVIOUS);
-                const value = (jsonValue != null ? JSON.parse(jsonValue) : []);
-                setPreviousWords(value);
-            } catch(e) {
-                console.log(e)
-            }
-        }
-
-        /** Saving words generated in previous days to AsyncStorage */
-        const savePreviousWords = async (words) => {
-            try {
-                const jsonValue = JSON.stringify(words)
-                await AsyncStorage.setItem(PREVIOUS, jsonValue)
-            } catch (e) {
-                console.log(e)
-            }
+            getCurrentWords();
         }
     }, [wordsNumber]);
 
+    const getWordsNumber = async () => {
+        try {
+            const value = await AsyncStorage.getItem(NUM);
+            if (value !== null) {
+                console.log('NUM value is not null, proceeding');
+                setWordsNumber(value);
+                // getCurrentWords();
+            } else {
+                console.log('NUM value is null, stop');
+                setModalVisible(true);
+            }
+        } catch(e) {
+            console.log(e)
+        }
+    }
+
     const saveNumber = (n) => {
-        console.log('saveNumber', n)
+        console.log('Save number function', n)
         if (n) {
             n = (typeof n == "number" ? n : parseInt(n))
-            console.log('Saving words number ', n)
             setWordsNumber(n);
             saveWordsNumber(n);
             setModalVisible(false);
+            // @TODO: before hiding the modal, prepare all the words here
         }
     }
+
+    const saveWordsNumber = async (n) => {
+        try {
+            await AsyncStorage.setItem(NUM, JSON.stringify(n))
+            console.log('Saved number')
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    /** Getting words listed as current in AsyncStorage */
+    const getCurrentWords = async () => {
+        let currentTime = new Date();
+        currentTime.setDate(currentTime.getDate() + 6); // @TEMPORARY: mock to increment date by one c
+        let date = currentTime.toDateString();
+        console.log('DATE', date);
+        let words = [];
+
+        try {
+            const jsonValue = await AsyncStorage.getItem(CURRENT);
+            const value = (jsonValue != null ? JSON.parse(jsonValue) : null);
+            console.log('CURRENT', value);
+
+            // Words from today already saved under 'current_words'
+            if (value && value.date == date && value.words.length > 0) {
+                console.log('**1')
+
+                /* If the words have been loaded but the user has changed daily words number */
+                if (value.words.length == wordsNumber) {
+                    console.log('A')
+                    words = value.words
+                } else if (value.words.length > wordsNumber) {
+                    console.log('B', value.words.length, wordsNumber);
+                    words = value.words.slice(0,wordsNumber);
+                    saveCurrentWords(date, words);
+                } else if (value.words.length < wordsNumber) {
+                    console.log('C')
+                    let additionalWords = getRandomWords(wordsNumber - value.words.length);
+                    words = [...value.words, ...additionalWords];
+                    saveCurrentWords(date, words);
+                }
+
+                getPreviousWords();
+
+            // Words from previous days are under 'current_words'
+            } else if (value && value.date != date) {
+                console.log('**2')
+                setPreviousWords([...previousWords, ...value.words]);
+                savePreviousWords([...previousWords, ...value.words]);
+                words = getRandomWords(wordsNumber);
+                saveCurrentWords(date, words);
+
+            // Other - e.g. first time in the app
+            } else {
+                console.log('**3')
+                words = getRandomWords(wordsNumber);
+                saveCurrentWords(date, words);
+                setPreviousWords([]); // ?
+            }
+            setCurrentWords(words);
+        } catch(e) {
+            console.log(e)
+        }
+    }
+
+    const getRandomWords = (n) => {
+        console.log('Get random words')
+        // @TODO: make sure words don't repeat themselves*
+        let arr = [];
+        for (let i = 0; i < parseInt(n); i++) {
+            let w = data[Math.floor(Math.random() * data.length)];
+            arr.push(w);
+        }
+        return arr;
+    }
+
+    /** Saving today's words as current to AsyncStorage */
+    const saveCurrentWords = async (date, words) => {
+        let obj = {
+            date: date,
+            words: words
+        }
+        try {
+            const jsonValue = JSON.stringify(obj)
+            await AsyncStorage.setItem(CURRENT, jsonValue)
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    /** Getting words generated in previous days */
+    const getPreviousWords = async () => {
+        try {
+            const jsonValue = await AsyncStorage.getItem(PREVIOUS);
+            const value = (jsonValue != null ? JSON.parse(jsonValue) : []);
+            setPreviousWords(value);
+        } catch(e) {
+            console.log(e)
+        }
+    }
+
+    /** Saving words generated in previous days to AsyncStorage */
+    const savePreviousWords = async (words) => {
+        try {
+            const jsonValue = JSON.stringify(words)
+            await AsyncStorage.setItem(PREVIOUS, jsonValue)
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+
 
     return (
         <SafeAreaView styles={styles.mainView}>
