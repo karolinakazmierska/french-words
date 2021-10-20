@@ -1,11 +1,12 @@
 import React, { useState, useEffect }  from 'react';
-import { StyleSheet, Text, View, SafeAreaView, ScrollView, FlatList, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, SafeAreaView, ScrollView, FlatList, Dimensions, Button } from 'react-native';
 import { SwiperFlatList } from 'react-native-swiper-flatlist';
 import Word from './../components/Word.js';
 import PreviousWord from './../components/PreviousWord.js';
 import { data } from './../utils/data.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Settings from './Settings.js';
+import HeaderButton from './../components/HeaderButton.js';
 
 // @TODO: move utils/data.js into remote storage (Firebase?)
 
@@ -39,14 +40,11 @@ export default function Words() {
     const [previousWords, setPreviousWords] = useState([]);
 
     useEffect(() => {
-        console.log('USE EFFECT 1')
         getWordsNumber();
     }, [])
 
     useEffect(() => {
         if (wordsNumber) {
-            console.log('USE EFFECT 2 -- words number changed and is now', wordsNumber)
-
             getCurrentWords();
         }
     }, [wordsNumber]);
@@ -55,11 +53,8 @@ export default function Words() {
         try {
             const value = await AsyncStorage.getItem(NUM);
             if (value !== null) {
-                console.log('NUM value is not null, proceeding');
                 setWordsNumber(value);
-                // getCurrentWords();
             } else {
-                console.log('NUM value is null, stop');
                 setModalVisible(true);
             }
         } catch(e) {
@@ -68,20 +63,18 @@ export default function Words() {
     }
 
     const saveNumber = (n) => {
-        console.log('Save number function', n)
-        if (n) {
-            n = (typeof n == "number" ? n : parseInt(n))
-            setWordsNumber(n);
-            saveWordsNumber(n);
-            setModalVisible(false);
-            // @TODO: before hiding the modal, prepare all the words here
+        if (!n) {
+            return;
         }
+        n = (typeof n == "number" ? n : parseInt(n))
+        setWordsNumber(n);
+        saveWordsNumber(n);
+        setModalVisible(false);
     }
 
     const saveWordsNumber = async (n) => {
         try {
             await AsyncStorage.setItem(NUM, JSON.stringify(n))
-            console.log('Saved number')
         } catch (e) {
             console.log(e)
         }
@@ -90,30 +83,24 @@ export default function Words() {
     /** Getting words listed as current in AsyncStorage */
     const getCurrentWords = async () => {
         let currentTime = new Date();
-        currentTime.setDate(currentTime.getDate() + 6); // @TEMPORARY: mock to increment date by one c
+        currentTime.setDate(currentTime.getDate() + 10); // @TEMPORARY: mock to increment date by one
         let date = currentTime.toDateString();
-        console.log('DATE', date);
         let words = [];
 
         try {
             const jsonValue = await AsyncStorage.getItem(CURRENT);
             const value = (jsonValue != null ? JSON.parse(jsonValue) : null);
-            console.log('CURRENT', value);
 
             // Words from today already saved under 'current_words'
             if (value && value.date == date && value.words.length > 0) {
-                console.log('**1')
 
                 /* If the words have been loaded but the user has changed daily words number */
                 if (value.words.length == wordsNumber) {
-                    console.log('A')
                     words = value.words
                 } else if (value.words.length > wordsNumber) {
-                    console.log('B', value.words.length, wordsNumber);
                     words = value.words.slice(0,wordsNumber);
                     saveCurrentWords(date, words);
                 } else if (value.words.length < wordsNumber) {
-                    console.log('C')
                     let additionalWords = getRandomWords(wordsNumber - value.words.length);
                     words = [...value.words, ...additionalWords];
                     saveCurrentWords(date, words);
@@ -123,7 +110,6 @@ export default function Words() {
 
             // Words from previous days are under 'current_words'
             } else if (value && value.date != date) {
-                console.log('**2')
                 setPreviousWords([...previousWords, ...value.words]);
                 savePreviousWords([...previousWords, ...value.words]);
                 words = getRandomWords(wordsNumber);
@@ -143,7 +129,6 @@ export default function Words() {
     }
 
     const getRandomWords = (n) => {
-        console.log('Get random words')
         // @TODO: make sure words don't repeat themselves*
         let arr = [];
         for (let i = 0; i < parseInt(n); i++) {
@@ -188,11 +173,14 @@ export default function Words() {
         }
     }
 
-
+    const toggleModal = () => {
+        setModalVisible(!modalVisible);
+    }
 
     return (
         <SafeAreaView styles={styles.mainView}>
-            <Settings visible={modalVisible} saveNumber={saveNumber} />
+            <HeaderButton text="Setings" toggleModal={toggleModal} />
+            <Settings visible={modalVisible} saveNumber={saveNumber} toggleModal={toggleModal} />
             <ScrollView style={styles.container}>
                 <View style={styles.section}>
                     <Text style={styles.title}>Word{currentWords.length > 1 ? 's' : ''} of the day:</Text>
@@ -227,7 +215,6 @@ export default function Words() {
                             <Text>No previous words to show</Text>
                         )
                     }
-
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -243,7 +230,7 @@ const styles = StyleSheet.create({
     },
     container: {
         marginTop: 60,
-        paddingHorizontal: 20
+        paddingHorizontal: s.paddingHorizontal,
     },
     section: {
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect }  from 'react';
 import { StyleSheet, Text, View, Modal, FlatList, TouchableOpacity, Dimensions } from 'react-native';
+import HeaderButton from './../components/HeaderButton.js';
 
 const { width, height } = Dimensions.get('window');
 const padding = 20;
@@ -7,17 +8,14 @@ const options = ['1','2','3','4'];
 const buttonMarginRight = 20;
 const buttonWidth = (width - 2 * padding) / 4 - buttonMarginRight * (options.length - 1) / options.length;
 
-export default function Settings({ visible, saveNumber }) {
+export default function Settings({ visible, saveNumber, toggleModal }) {
 
     const [selected, setSelected] = useState(1);
-
-    // const update = () => {
-    //     console.log('saving', selected)
-    // }
 
     return (
         <Modal visible={visible}>
             <View style={styles.modalView}>
+                <HeaderButton text="Close" toggleModal={toggleModal} />
                 <Text style={styles.title}>How many words per day would you like to learn?</Text>
                 <FlatList
                     data={options}
@@ -42,9 +40,8 @@ export default function Settings({ visible, saveNumber }) {
 import s from './../utils/styles.js';
 const styles = StyleSheet.create({
     modalView: {
-        paddingTop: 100,
+        paddingTop: 160,
         paddingHorizontal: padding,
-        marginTop: 22
     },
     title: {
         fontSize: 16,
